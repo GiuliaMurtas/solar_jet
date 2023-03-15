@@ -79,7 +79,8 @@ d_floor         = 1.0e-2        # density floor
 b0              = 1.5           # reconnection magnetic field strength
 rho             = 1.0           # gas density
 pgas            = 0.1           # gas pressure
-B_polar		= 1.0
+
+B_polar		= 1.0                 # normalization for the magnetic field
 xca		= -20
 yca		= -40
 zca 		= 10
