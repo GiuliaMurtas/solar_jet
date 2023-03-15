@@ -299,27 +299,6 @@ int RefinementCondition(MeshBlock *pmb)
   return 0;
 }
 
-/* // refinement condition: check the pressure gradient */
-/* int RefinementCondition(MeshBlock *pmb) */
-/* { */
-/*   AthenaArray<Real> &w = pmb->phydro->w; */
-/*   Real maxeps=0.0; */
-/*   Real dx = pmb->pcoord->dx1f(0); */
-/*   for(int k=pmb->ks; k<=pmb->ke; k++) { */
-/*     for(int j=pmb->js; j<=pmb->je; j++) { */
-/*       for(int i=pmb->is; i<=pmb->ie; i++) { */
-/*         Real eps= sqrt(SQR(0.5*(w(IPR,k,j,i+1)-w(IPR,k,j,i-1))) */
-/*                       +SQR(0.5*(w(IPR,k,j+1,i)-w(IPR,k,j-1,i))) */
-/*                       +SQR(0.5*(w(IPR,k+1,j,i)-w(IPR,k-1,j,i))))/w(IPR,k,j,i); */
-/*         maxeps = std::max(maxeps, eps); */
-/*       } */
-/*     } */
-/*   } */
-/*   if(maxeps > 10.0) return 1; */
-/*   if(maxeps < 2.0) return -1; */
-/*   return 0; */
-/* } */
-
 namespace {
 //========================================================================================
 //! \fn Real pres_init(const Real bx, const Real by, const Real bz, const int pres_balance)
@@ -342,7 +321,6 @@ Real pres_init(const Real bx, const Real by, const Real bz,
   }
   return p0;
 }
-
 
 } // namespace
 
