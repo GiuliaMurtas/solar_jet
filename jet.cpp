@@ -3,9 +3,8 @@
 // Copyright(C) 2014 James M. Stone <jmstone@princeton.edu> and other code contributors
 // Licensed under the 3-clause BSD License, see LICENSE file for details
 //========================================================================================
-//! \file reconnection.cpp
-//  \brief Problem generator for magnetic reconnection problem.  Works in Cartesian,
-//         coordinate.
+//! \file jet.cpp
+//  \brief Problem generator for the solar jet problem.  Works in Cartesian coordinates.
 //
 // REFERENCE:
 
@@ -38,8 +37,8 @@ namespace {
 
 Real pres_init(const Real bx, const Real by, const Real bz, const Real B_polar,
     const int pres_balance, const int pert_B, const Real b0, const Real Bguide,
-    const Real phi_pert, const Real beta0, const Real lx,
-    const Real xca, const Real yca, const Real zca, const Real xcb, const Real ycb, const Real zcb);
+    const Real phi_pert, const Real beta0, const Real lx, const Real xca,
+    const Real yca, const Real zca, const Real xcb, const Real ycb, const Real zcb);
 }
 
 // Boundary conditions
