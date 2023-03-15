@@ -246,7 +246,6 @@ int RefinementCondition(MeshBlock *pmb);
 void Mesh::InitUserMeshData(ParameterInput *pin)
 {
   // Enroll boundary value function pointers
-  /* EnrollUserBoundaryFunction(BoundaryFace::inner_x1, SymmInnerX1); */
   if (mesh_bcs[BoundaryFace::inner_x1] == GetBoundaryFlag("user")) {
     EnrollUserBoundaryFunction(BoundaryFace::inner_x1, OpenInnerX1);
   }
@@ -259,8 +258,6 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   if (mesh_bcs[BoundaryFace::outer_x2] == GetBoundaryFlag("user")) {
     EnrollUserBoundaryFunction(BoundaryFace::outer_x2, OpenOuterX2);
   }
-  /* EnrollUserBoundaryFunction(BoundaryFace::inner_x3, ReduceInnerX3); */
-  /* EnrollUserBoundaryFunction(BoundaryFace::outer_x3, ReduceOuterX3); */
   if(adaptive==true)
     EnrollUserRefinementCondition(RefinementCondition);
 
@@ -286,11 +283,6 @@ int RefinementCondition(MeshBlock *pmb)
       }
     }
   }
-  /* // refine : curvature > 0.01 */
-  /* if(maxeps > 0.01) return 1; */
-  /* // derefinement: curvature < 0.005 */
-  /* if(maxeps < 0.005) return -1; */
-  /* // otherwise, stay */
   // refine : curvature > 10.0
   if(maxeps > 100.0) return 1;
   // derefinement: curvature < 5.0
@@ -301,10 +293,6 @@ int RefinementCondition(MeshBlock *pmb)
 
 namespace {
 //========================================================================================
-//! \fn Real pres_init(const Real bx, const Real by, const Real bz, const int pres_balance)
-//! \fn Real pres_init(const Real bx, const Real by, const Real bz,
-//          const int pres_balance, const int pert_B, const Real b0, const Real Bguide,
-//          const Real phi_pert, const Real beta0, const Real lx)
 //  \brief initial gas pressure
 //========================================================================================
 Real pres_init(const Real bx, const Real by, const Real bz,
@@ -375,12 +363,8 @@ void SymmInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 }
 
 //==============================================================================
-// Open boundary condition at the left edge
+// Open boundary condition at the left edge (inner x1 boundary)
 //==============================================================================
-//! \fn void OpenInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
-//                         FaceField &b, Real time, Real dt,
-//                         int is, int ie, int js, int je, int ks, int ke, int ngh)
-//  \brief Open boundary conditions, inner x1 boundary
 void OpenInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
                  FaceField &b, Real time, Real dt,
                  int is, int ie, int js, int je, int ks, int ke, int ngh) {
@@ -436,12 +420,8 @@ void OpenInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 }
 
 //==============================================================================
-// Open boundary condition at the right edge
+// Open boundary condition at the right edge (outer x1 boundary)
 //==============================================================================
-//! \fn void OpenOuterX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
-//                         FaceField &b, Real time, Real dt,
-//                         int is, int ie, int js, int je, int ks, int ke, int ngh)
-//  \brief Open boundary conditions, outer x1 boundary
 void OpenOuterX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
                     FaceField &b, Real time, Real dt,
                     int is, int ie, int js, int je, int ks, int ke, int ngh) {
@@ -617,9 +597,6 @@ void OpenOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 }
 
 //----------------------------------------------------------------------------------------
-//! \fn void ReduceInnerX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
-//                          FaceField &b, Real time, Real dt,
-//                          int is, int ie, int js, int je, int ks, int ke, int ngh)
 //  \brief Reduce boundary conditions, inner x3 boundary
 
 void ReduceInnerX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
