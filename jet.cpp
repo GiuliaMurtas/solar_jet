@@ -310,7 +310,7 @@ Real pres_init(const Real bx, const Real by, const Real bz,
   return p0;
 }
 
-} // namespace
+}
 
 //==============================================================================
 // SymmInnerX1 boundary condition
