@@ -26,14 +26,14 @@ ncycle_out      = 1             # interval for stdout summary info
 
 <mesh>
 nx1             = 512           # Number of zones in X1-direction
-x1min           = 0.0           # minimum value of X1
-x1max           = 1.0           # maximum value of X1
+x1min           = -60.0           # minimum value of X1
+x1max           = 0.0           # maximum value of X1
 ix1_bc          = user          # inner-X1 boundary flag
 ox1_bc          = user          # outer-X1 boundary flag
 
 nx2             = 1024          # Number of zones in X2-direction
 x2min           = 0.0           # minimum value of X2
-x2max           = 2.0           # maximum value of X2
+x2max           = 40.0           # maximum value of X2
 ix2_bc          = user          # inner-X2 boundary flag
 ox2_bc          = user          # outer-X2 boundary flag
 
@@ -79,13 +79,12 @@ d_floor         = 1.0e-2        # density floor
 b0              = 1.5           # reconnection magnetic field strength
 rho             = 1.0           # gas density
 pgas            = 0.1           # gas pressure
-
-B_polar		= 1.0                 # normalization for the magnetic field
-xca		= -20
-yca		= -40
-zca 		= 10
-xcb		= -30
-ycb		= -40
-zcb		= 10
+B_polar         = 1.0
+xca             = -20
+yca             = -40
+zca             = 10
+xcb             = -30
+ycb             = -40
+zcb             = 10
 
 

@@ -25,7 +25,7 @@
 #include "../hydro/hydro.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
-#include "../utils/utils.hpp" // ran2()
+#include "../utils/utils.hpp"
 
 #ifdef MPI_PARALLEL
 #include <mpi.h>
@@ -101,19 +101,19 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   uniform_rho = pin->GetInteger("problem", "uniform_rho");
   pert_B = pin->GetInteger("problem", "pert_B");
   pert_V = pin->GetInteger("problem", "pert_V");
-  b0 = pin->GetReal(“problem”,”b0”);
+  b0 = pin->GetReal("problem","b0");
 
-  B_polar = pin->GetReal(“problem”,”B_polar”);
-  xca = pin->GetReal(“problem”,”xca”);
-  yca = pin->GetReal(“problem”,”yca”);
-  zca = pin->GetReal(“problem”,”zca”);
-  xcb = pin->GetReal(“problem”,”xcb”);
-  ycb = pin->GetReal(“problem”,”ycb”);
-  zcb = pin->GetReal(“problem”,”zcb”);
+  B_polar = pin->GetReal("problem","B_polar");
+  xca = pin->GetReal("problem","xca");
+  yca = pin->GetReal("problem","yca");
+  zca = pin->GetReal("problem","zca");
+  xcb = pin->GetReal("problem","xcb");
+  ycb = pin->GetReal("problem","ycb");
+  zcb = pin->GetReal("problem","zcb");
 
   // initialize global variables
   if (NON_BAROTROPIC_EOS) {
-    gamma_adi = peso->GetGamma();
+    gamma_adi = peos->GetGamma();
     gamma_adi_red = gamma_adi / (gamma_adi - 1.0);
     gm1 = (gamma_adi - 1.0);
   } else {
@@ -127,7 +127,12 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   int level=loc.level;
 
   // Initialize interface fields
-
+  
+  // Compute cell-centered fields
+  pfield->CalculateCellCenteredField(pfield->b, pfield->bcc, pcoord, is, ie, js, je, ks, ke);
+  
+  AthenaArray<Real> bb;
+  bb.NewAthenaArray(3, ke+1, je+1, ie+1);
   for (int k=ks; k<=ke; k++) {
    for (int j=js; j<=je; j++) {
     for (int i=is; i<=ie; i++) {
@@ -139,21 +144,23 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       phydro->w(IVY,k,j,i) = phydro->w1(IM2,k,j,i) = 0.0;
       phydro->w(IVZ,k,j,i) = phydro->w1(IM3,k,j,i) = 0.0;
 
-      x1f = pcoord->x1f(i)
-      x2f = pcoord->x2f(j)
-      x3f = pcoord->x3f(k)
+      Real x1f = pcoord->x1f(i);
+      Real x2f = pcoord->x2f(j);
+      Real x3f = pcoord->x3f(k);
       
-      x0 = x1f + xca
-      y0 = x2f + yca
-      z0 = x3f + zca
+      Real x0 = x1f + xca;
+      Real y0 = x2f + yca;
+      Real z0 = x3f + zca;
 
-      xc0 = x1f + xcb
-      yc0 = x2f + ycb
-      zc0 = x3f + zcb
+      Real xc0 = x1f + xcb;
+      Real yc0 = x2f + ycb;
+      Real zc0 = x3f + zcb;
 
-      pfield->b.x1f(k,j,i) = ((x0/(x0**2+y0**2+z0**2)**1.5*B_polar)-(xc0/(xc0**2+yc0**2+zc0**2)**1.5*B_polar*1.5))/b0;
-      pfield->b.x2f(k,j,i) = ((y0/(x0**2+y0**2+z0**2)**1.5*B_polar)-(yc0/(xc0**2+yc0**2+zc0**2)**1.5*B_polar*1.5))/b0;
-      pfield->b.x3f(k,j,i) = ((0.001+z0/(x0**2+y0**2+z0**2)**1.5*B_polar)-(zc0/(xc0**2+yc0**2+zc0**2)**1.5*B_polar*1.5))/b0;
+      pfield->b.x1f(k,j,i) = ((x0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(xc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.5))/b0;
+      pfield->b.x2f(k,j,i) = ((y0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(yc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.5))/b0;
+      pfield->b.x3f(k,j,i) = ((0.001+z0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(zc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.5))/b0;
+        
+      if(pfield->b.x1f(k,j,i)!=0.0) std::cout << pfield->b.x1f(k,j,i) << std::endl;
 
       // Set magnetic fields
       bb(IB1,k,j,i) = pfield->b.x1f(k,j,i);
@@ -162,32 +169,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
     }
    }
   }
-
-  // Compute cell-centered fields
-  pfield->CalculateCellCenteredField(pfield->b, pfield->bcc, pcoord, is, ie, js, je, ks, ke);
-
   // Initialize hydro variables
 #ifdef RELATIVISTIC_DYNAMICS
-  AthenaArray<Real> bb;
-  bb.NewAthenaArray(3, ke+1, je+1, ie+1);
-  for (int k=ks; k<=ke; k++) {
-  for (int j=js; j<=je; j++) {
-    for (int i=is; i<=ie; i++) {
-      // Set primitives
-      phydro->w(IDN,k,j,i) = phydro->w1(IDN,k,j,i) = rho;
-      phydro->w(IPR,k,j,i) = phydro->w1(IPR,k,j,i) = pgas;
-      phydro->w(IVX,k,j,i) = phydro->w1(IM1,k,j,i) = 0.0;
-      phydro->w(IVY,k,j,i) = phydro->w1(IM2,k,j,i) = 0.0;
-      phydro->w(IVZ,k,j,i) = phydro->w1(IM3,k,j,i) = 0.0;
-
-      // Set magnetic fields
-      bb(IB1,k,j,i) = pfield->b.x1f(k,j,i);
-      bb(IB2,k,j,i) = pfield->b.x2f(k,j,i);
-      bb(IB3,k,j,i) = pfield->b.x3f(k,j,i);
-    }
-  }}
-  peos->PrimitiveToConserved(phydro->w, bb, phydro->u, pcoord, is, ie, js, je, ks, ke);
-  bb.DeleteAthenaArray();
+  //peos->PrimitiveToConserved(phydro->w, bb, phydro->u, pcoord, is, ie, js, je, ks, ke);
+  //bb.DeleteAthenaArray();
 #else
   Real pgas_nr;
   int64_t iseed = -1 - gid; // Ensure a different initial random seed for each meshblock.
@@ -310,7 +295,7 @@ Real pres_init(const Real bx, const Real by, const Real bz,
   return p0;
 }
 
-}
+} // namespace
 
 //==============================================================================
 // SymmInnerX1 boundary condition
