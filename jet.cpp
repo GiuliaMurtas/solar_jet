@@ -41,6 +41,38 @@ Real pres_init(const Real bx, const Real by, const Real bz, const Real B_polar,
     const Real yca, const Real zca, const Real xcb, const Real ycb, const Real zcb);
 }
 
+void VertGrav(MeshBlock *pmb, const Real time, const Real dt,
+              const AthenaArray<Real> &prim, const AthenaArray<Real> &prim_scalar,
+              const AthenaArray<Real> &bcc, AthenaArray<Real> &cons,
+              AthenaArray<Real> &cons_scalar) {
+  //Real fsmooth, xi, sign;
+  //Real Lz = pmb->pmy_mesh->mesh_size.x3max - pmb->pmy_mesh->mesh_size.x3min;
+  //Real z0 = Lz/2.0;
+  //Real lambda = 0.1 / z0;
+  for (int k=pmb->ks; k<=pmb->ke; ++k) {
+    for (int j=pmb->js; j<=pmb->je; ++j) {
+      for (int i=pmb->is; i<=pmb->ie; ++i) {
+  //      Real den = prim(IDN,k,j,i);
+  //      Real x3 = pmb->pcoord->x3v(k);
+        // smoothing function
+  //      if (x3 >= 0) {
+  //        sign = -1.0;
+  //      } else {
+  //        sign = 1.0;
+  //      }
+  //      xi = z0/x3;
+  //      fsmooth = SQR( std::sqrt( SQR(xi+sign) + SQR(xi*lambda) ) + xi*sign );
+        // multiply gravitational potential by smoothing function
+  //      cons(IM3,k,j,i) -= dt*den*SQR(Omega_0)*x3*fsmooth;
+  //      if (NON_BAROTROPIC_EOS) {
+  //        cons(IEN,k,j,i) -= dt*den*SQR(Omega_0)*prim(IVZ,k,j,i)*x3*fsmooth;
+  //      }
+      }
+    }
+  }
+  //return;
+}
+
 // Boundary conditions
 void SymmInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
                 FaceField &b, Real time, Real dt,
@@ -55,6 +87,12 @@ void OpenInnerX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
                 FaceField &b, Real time, Real dt,
                 int is, int ie, int js, int je, int ks, int ke, int ngh);
 void OpenOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+                FaceField &b, Real time, Real dt,
+                int is, int ie, int js, int je, int ks, int ke, int ngh);
+void CloseInnerX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+                FaceField &b, Real time, Real dt,
+                int is, int ie, int js, int je, int ks, int ke, int ngh);
+void CloseOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
                 FaceField &b, Real time, Real dt,
                 int is, int ie, int js, int je, int ks, int ke, int ngh);
 void ReduceInnerX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
@@ -86,6 +124,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   int pert_B = 1;       // In default, magnetic field is perturbed
   int pert_V = 0;       // In default, velocity field is not perturbed
   int random_vpert = 1; // In default, random velocity perturbation is used
+  int ngh = 2;
 
   xmin  = pin->GetReal("mesh", "x1min");
   xmax  = pin->GetReal("mesh", "x1max");
@@ -124,18 +163,25 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   int nx1 = block_size.nx1 + 2*NGHOST;
   int nx2 = block_size.nx2 + 2*NGHOST;
   int nx3 = block_size.nx3 + 2*NGHOST;
-  int level=loc.level;
+  int level=loc.level;    
 
   // Initialize interface fields
+  //for (int k=0; k<=ke+ngh; k++) {
+  // for (int j=0; j<=je+ngh; j++) {
+  //  for (int i=0; i<=ie+ngh; i++) { 
+  //       b.x3f(k,j,i) = ruser_meshblock_data[0](k,j,i);
+  //       b.x2f(k,j,i) = ruser_meshblock_data[1](k,j,i);
+  //       b.x1f(k,j,i) = ruser_meshblock_data[2](k,j,i);
+  // } } }
   
   // Compute cell-centered fields
   pfield->CalculateCellCenteredField(pfield->b, pfield->bcc, pcoord, is, ie, js, je, ks, ke);
   
   AthenaArray<Real> bb;
   bb.NewAthenaArray(3, ke+1, je+1, ie+1);
-  for (int k=ks; k<=ke; k++) {
-   for (int j=js; j<=je; j++) {
-    for (int i=is; i<=ie; i++) {
+  for (int k=0; k<=ke+ngh; k++) {
+   for (int j=0; j<=je+ngh; j++) {
+    for (int i=0; i<=ie+ngh; i++) {
 
       // Set primitives
       phydro->w(IDN,k,j,i) = phydro->w1(IDN,k,j,i) = rho;
@@ -156,9 +202,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       Real yc0 = x2f + ycb;
       Real zc0 = x3f + zcb;
 
-      pfield->b.x1f(k,j,i) = ((x0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(xc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.5))/b0;
-      pfield->b.x2f(k,j,i) = ((y0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(yc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.5))/b0;
-      pfield->b.x3f(k,j,i) = ((0.001+z0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(zc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.5))/b0;
+      ruser_meshblock_data[2](k,j,i) = ((x0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(xc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.52))/b0;
+      ruser_meshblock_data[1](k,j,i) = ((y0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(yc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.52))/b0;
+      ruser_meshblock_data[0](k,j,i) = ((0.001+z0/std::pow((std::pow(x0,2.0)+std::pow(y0,2.0)+std::pow(z0,2.0)),1.5)*B_polar)-(zc0/std::pow((std::pow(xc0,2.0)+std::pow(yc0,2.0)+std::pow(zc0,2.0)),1.5)*B_polar*1.52))/b0;
         
       if(pfield->b.x1f(k,j,i)!=0.0) std::cout << pfield->b.x1f(k,j,i) << std::endl;
 
@@ -169,6 +215,19 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
     }
    }
   }
+    
+  for (int k=ks; k<=ke; k++) {
+   for (int j=js; j<=je; j++) {
+    for (int i=is; i<=ie; i++) {    
+      // Set primitives
+      phydro->w(IVX,k,j,i) = ruser_meshblock_data[3](k,j,i);
+      phydro->w(IVY,k,j,i) = ruser_meshblock_data[4](k,j,i);
+      phydro->w(IVZ,k,j,i) = ruser_meshblock_data[5](k,j,i);
+      phydro->w(IDN,k,j,i) = ruser_meshblock_data[6](k,j,i);
+      phydro->w(IPR,k,j,i) = ruser_meshblock_data[7](k,j,i);
+        
+    } } }
+    
   // Initialize hydro variables
 #ifdef RELATIVISTIC_DYNAMICS
   //peos->PrimitiveToConserved(phydro->w, bb, phydro->u, pcoord, is, ie, js, je, ks, ke);
@@ -228,8 +287,24 @@ void Mesh::UserWorkAfterLoop(ParameterInput *pin) {
 
 int RefinementCondition(MeshBlock *pmb);
 
+                        
+void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
+  int nx3,nx2,nx1;
+    
+  AllocateRealUserMeshBlockDataField(3);
+  ruser_meshblock_data[0].NewAthenaArray(nx3,nx2,nx1);
+  ruser_meshblock_data[1].NewAthenaArray(nx3,nx2,nx1);
+  ruser_meshblock_data[2].NewAthenaArray(nx3,nx2,nx1);
+  return;
+}  
+                          
+
 void Mesh::InitUserMeshData(ParameterInput *pin)
 {
+  // Enroll user-defined physical source terms
+  //   vertical external gravitational potential
+  EnrollUserExplicitSourceFunction(VertGrav);
+    
   // Enroll boundary value function pointers
   if (mesh_bcs[BoundaryFace::inner_x1] == GetBoundaryFlag("user")) {
     EnrollUserBoundaryFunction(BoundaryFace::inner_x1, OpenInnerX1);
@@ -237,15 +312,20 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   if (mesh_bcs[BoundaryFace::outer_x1] == GetBoundaryFlag("user")) {
     EnrollUserBoundaryFunction(BoundaryFace::outer_x1, OpenOuterX1);
   }
+  //if (mesh_bcs[BoundaryFace::inner_x2] == GetBoundaryFlag("user")) {
+  //  EnrollUserBoundaryFunction(BoundaryFace::inner_x2, OpenInnerX2);
+  //}
   if (mesh_bcs[BoundaryFace::inner_x2] == GetBoundaryFlag("user")) {
-    EnrollUserBoundaryFunction(BoundaryFace::inner_x2, OpenInnerX2);
+    EnrollUserBoundaryFunction(BoundaryFace::inner_x2, CloseInnerX2);
   }
   if (mesh_bcs[BoundaryFace::outer_x2] == GetBoundaryFlag("user")) {
     EnrollUserBoundaryFunction(BoundaryFace::outer_x2, OpenOuterX2);
   }
+  //if (mesh_bcs[BoundaryFace::outer_x2] == GetBoundaryFlag("close")) {
+  //  EnrollUserBoundaryFunction(BoundaryFace::outer_x2, CloseOuterX2);
+  //}
   if(adaptive==true)
-    EnrollUserRefinementCondition(RefinementCondition);
-
+    EnrollUserRefinementCondition(RefinementCondition);  
   return;
 }
 
@@ -572,7 +652,7 @@ void OpenOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
     for (int k=ks; k<=ke+1; ++k) {
       for (int j=1; j<=ngh; ++j) {
         for (int i=is; i<=ie; ++i) {
-          b.x3f(k,(je+j  ),i) = b.x3f(k,(je-j+1),i);
+          b.x3f(k,(je+j),i) = b.x3f(k,(je-j+1),i);
         }
       }
     }
@@ -580,6 +660,124 @@ void OpenOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 
   return;
 }
+                          
+//==============================================================================
+// Close boundary condition (inner x2 boundary)
+//==============================================================================
+void CloseInnerX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+                FaceField &b, Real time, Real dt,
+                int is, int ie, int js, int je, int ks, int ke, int ngh) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NHYDRO); ++n) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie; ++i) {
+          prim(n,k,js-j,i) = prim(n,k,js+j-1,i);
+        }
+      }
+    }
+  }
+
+  // Inflow restriction
+  Real dn_ratio;
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=1; j<=ngh; ++j) {
+      for (int i=is; i<=ie; ++i) {
+        if (prim(IVY,k,js-j,i) > 0.0) {
+          prim(IVY,k,js-j,i) = pmb->ruser_meshblock_data[4](k,js-j,i); // Vx
+        }
+      }
+    }
+  }
+
+  // copy face-centered magnetic fields into ghost zones
+  if (MAGNETIC_FIELDS_ENABLED) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie+1; ++i) {
+          b.x1f(k,(js-j),i) = pmb->ruser_meshblock_data[2](k,js-j,i); // Bx
+        }
+      }
+    }
+
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie; ++i) {
+          b.x2f(k,(js-j),i) = pmb->ruser_meshblock_data[1](k,js-j,i); // By
+        }
+      }
+    }
+
+    for (int k=ks; k<=ke+1; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie; ++i) {
+          b.x3f(k,(js-j),i) = pmb->ruser_meshblock_data[0](k,js-j,i); // Bz
+        }
+      }
+    }
+  }
+
+  return;
+}
+            
+//==============================================================================
+// Close boundary condition (outer x2 boundary)
+//==============================================================================
+void CloseOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+                FaceField &b, Real time, Real dt,
+                int is, int ie, int js, int je, int ks, int ke, int ngh) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NHYDRO); ++n) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie; ++i) {
+          prim(n,k,je+j,i) = prim(n,k,je-j+1,i);
+        }
+      }
+    }
+  }
+
+  // Inflow restriction
+  Real dn_ratio;
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=1; j<=ngh; ++j) {
+      for (int i=is; i<=ie; ++i) {
+        if (prim(IVY,k,je+j,i) < 0.0) {
+          prim(IVY,k,je+j,i) = pmb->ruser_meshblock_data[4](k,je+j,i); // Vy
+        }
+      }
+    }
+  }
+
+  // copy face-centered magnetic fields into ghost zones
+  if (MAGNETIC_FIELDS_ENABLED) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie+1; ++i) {
+          b.x1f(k,(je+j),i) = pmb->ruser_meshblock_data[2](k,je+j,i); // Bx
+        }
+      }
+    }
+
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie; ++i) {
+          b.x2f(k,(je+j),i) = pmb->ruser_meshblock_data[1](k,je+j,i); // By
+        }
+      }
+    }
+
+    for (int k=ks; k<=ke+1; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+        for (int i=is; i<=ie; ++i) {
+          b.x3f(k,(je+j),i) = pmb->ruser_meshblock_data[0](k,je+j,i); // Bz
+        }
+      }
+    }
+  }
+
+  return;
+}                          
 
 //----------------------------------------------------------------------------------------
 //  \brief Reduce boundary conditions, inner x3 boundary
